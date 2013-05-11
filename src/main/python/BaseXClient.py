@@ -59,7 +59,9 @@ class SocketInputReader(object):
         return ''.join(strings)
 
 class Session(object):
-    def __init__(self, host, port, user, pw):
+
+    # James: Extending for supporting including a default database and namespaces
+    def __init__(self, host, port, user, pw, dbName = None):
 
         self.__info = None
 
@@ -87,6 +89,18 @@ class Session(object):
         # evaluate success flag
         if self.__s.recv(1) != chr(0):
             raise IOError('Access Denied.')
+
+        # Connect to the default database
+        if dbName:
+
+            self.__dbName = dbName
+
+            try:
+                self.execute('open ' + self.__dbName)
+            
+            except IOError as e:
+
+                raise IOError("The database {0} could not be opened\n{1}: {2}".format(self.__dbName, e.errno, e.strerror))
 
     def execute(self, com):
         # send command to server
@@ -215,8 +229,22 @@ class Session(object):
             
 
 class Query():
-    def __init__(self, session, q):
+
+    # James: Extending the constructor in order to set the default namespaces
+
+    def __init__(self, session, q, namespaces = None):
         self.__session = session
+
+        # Set the default namespaces
+        if namespaces:
+
+            self.__namespaces = namespaces
+
+            for nsKey, nsUri in self.__namespaces.iteritems():
+
+                declStr = "declare namespace {0} = \"{1}\"; ".format(nsKey, nsUri)
+                q = declStr + q
+
         self.__id = self.exc(chr(0), q)
 
     def bind(self, name, value, datatype=''):

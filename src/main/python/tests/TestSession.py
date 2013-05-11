@@ -12,6 +12,8 @@ class TestSession(unittest.TestCase):
 
     def testConstructor(self):
 
+        # Testing the default constructor
+
         self.__session = Session('localhost', 1984, 'admin', 'admin')
         self.assertEqual(self.__session._Session__info, None)
 
@@ -28,6 +30,17 @@ class TestSession(unittest.TestCase):
 
         self.assertEqual(self.__session._Session__event_listening_thread, None)
         self.assertEqual(self.__session._Session__event_callbacks, {})
+
+        # Testing the constructor with a database name
+        
+        # Ensure that the proper exception is raised for attempting to open a non-existent database
+
+        # 2.7 only
+        #with self.assertRaises(IOError):
+
+        #    self.__session = Session('localhost', 1984, 'admin', 'admin', 'noExist')
+
+        self.__session = Session('localhost', 1984, 'admin', 'admin', 'RePEc')
 
     def tearDown(self):
 
