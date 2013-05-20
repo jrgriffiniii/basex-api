@@ -11,6 +11,12 @@ Documentation: http://docs.basex.org/wiki/Clients
 import hashlib, socket, array
 import threading
 
+# James: Using lxml by default; should implement an XML parser wrapper class
+from lxml import etree
+
+# James: Parsing string XML
+import re
+
 class SocketInputReader(object):
     
     def __init__(self, sock):
@@ -257,8 +263,76 @@ class Query():
         self.__session.send(chr(4) + self.__id)
         return self.__session.iter_receive()
 
-    def execute(self):
-        return self.exc(chr(5), self.__id)
+    def execute(self, lxmlEtree = None):
+
+        if lxmlEtree:
+
+            return self.executeXml(lxmlEtree)
+        else:
+
+            # Pass the results as strings
+            return self.exc(chr(5), self.__id)
+
+    def executeXml(self, lxmlEtree):
+
+        xmlStr = self.exc(chr(5), self.__id)
+
+        # Return an empty array for cases in which there were no results
+        if not xmlStr: return []
+
+        # Replace all cases of <elementName></elementName> with <elementName />
+        
+        pattern = re.compile('></[a-zA-Z0-9]+>', re.MULTILINE)
+        xmlStr = re.sub(pattern, ' />', xmlStr)
+
+        # Split the XML strings by tags and whitespace between these tags
+        # This does not handle cases of CDATA
+
+        pattern = re.compile('(?<=>)\s*(?=<)', re.MULTILINE)
+        results = re.split(pattern, xmlStr)
+
+        elements = []
+
+        i = 0
+        while i < len(results):
+
+            # For those cases where elements span more than one line
+
+            # <elementName>
+            # <elementName /><elementName1>...
+            # <elementName>data</elementName><elementName1>...
+
+            if len(re.findall(r'<[a-zA-Z].+?>', results[i])) != len(re.findall(r'</[a-zA-Z0-9]+>', results[i])):
+
+                depth = 0
+                parser = lxmlEtree.XMLParser()
+
+                # </elementName>
+                # ntName><elementName>...
+                # <elementName>\n<elementName />\n
+
+                while i < len(results) and (depth > 0 or len(re.findall(r'<[a-zA-Z].+?>', results[i])) != len(re.findall(r'</[a-zA-Z0-9]+>', results[i]))):
+
+                    parser.feed(results[i])
+
+
+                    # Decrease the depth by the number of tags closed
+                    depth -= len(re.findall(r'</[a-zA-Z0-9]+>', results[i])) - len(re.findall(r'<[a-zA-Z].+?>', results[i]))
+
+                    # Refactor
+                    if depth == 0: break
+
+                    i+=1
+
+                element = parser.close()
+            else :
+
+                element = lxmlEtree.fromstring(results[i])
+
+            elements.append(element)
+            i+=1
+
+        return elements
 
     def info(self):
         return self.exc(chr(6), self.__id)
