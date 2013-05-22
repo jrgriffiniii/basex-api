@@ -318,6 +318,11 @@ class Query():
                     # Feed the XML fragment to the parser
                     parser.feed(results[i])
 
+                    if len(re.findall(r'<[a-zA-Z].+? ?/>', results[i])) == 1 and depth > 0 :
+
+                        i+=1
+                        continue
+
                     # Decrease the depth by the number of tags closed
                     depth -= len(re.findall(r'</[a-zA-Z0-9]+>', results[i])) - len(re.findall(openTagPattern, results[i]))
 
