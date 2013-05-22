@@ -283,7 +283,7 @@ class Query():
         # Replace all cases of <elementName></elementName> with <elementName />
         
         pattern = re.compile('></[a-zA-Z0-9]+>', re.MULTILINE)
-        xmlStr = re.sub(pattern, ' />', xmlStr)
+        xmlStr = re.sub(pattern, '/>', xmlStr)
 
         # Split the XML strings by tags and whitespace between these tags
         # This does not handle cases of CDATA
@@ -302,7 +302,9 @@ class Query():
             # <elementName /><elementName1>...
             # <elementName>data</elementName><elementName1>...
 
-            if len(re.findall(r'<[a-zA-Z].+?>', results[i])) != len(re.findall(r'</[a-zA-Z0-9]+>', results[i])):
+            openTagPattern = r'<(?!/)[^>]+>'
+
+            if len(re.findall(openTagPattern, results[i])) != len(re.findall(r'</[a-zA-Z0-9]+>', results[i])):
 
                 depth = 0
                 parser = lxmlEtree.XMLParser()
@@ -311,19 +313,23 @@ class Query():
                 # ntName><elementName>...
                 # <elementName>\n<elementName />\n
 
-                while i < len(results) and (depth > 0 or len(re.findall(r'<[a-zA-Z].+?>', results[i])) != len(re.findall(r'</[a-zA-Z0-9]+>', results[i]))):
+                while i < len(results) and (depth > 0 or len(re.findall(openTagPattern, results[i])) != len(re.findall(r'</[a-zA-Z0-9]+>', results[i]))):
 
+                    # Feed the XML fragment to the parser
                     parser.feed(results[i])
 
-
                     # Decrease the depth by the number of tags closed
-                    depth -= len(re.findall(r'</[a-zA-Z0-9]+>', results[i])) - len(re.findall(r'<[a-zA-Z].+?>', results[i]))
+                    depth -= len(re.findall(r'</[a-zA-Z0-9]+>', results[i])) - len(re.findall(openTagPattern, results[i]))
 
                     # Refactor
                     if depth == 0: break
 
+                    # For cases in which empty elements are passed to the parser
+                    if len(re.findall(r'<[a-zA-Z].+? ?/>', results[i])) == 1 and len(re.findall(openTagPattern, results[i])) == 0: break
+
                     i+=1
 
+                # Close the parser
                 element = parser.close()
             else :
 
