@@ -324,7 +324,7 @@ class Query():
                         continue
 
                     # Decrease the depth by the number of tags closed
-                    depth -= len(re.findall(r'</[a-zA-Z0-9]+>', results[i])) - len(re.findall(openTagPattern, results[i]))
+                    depth -= len(re.findall(r'</[a-zA-Z0-9:]+>', results[i])) - len(re.findall(openTagPattern, results[i]))
 
                     # Refactor
                     if depth == 0: break
