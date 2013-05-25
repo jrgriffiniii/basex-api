@@ -206,7 +206,8 @@ class Session(object):
 
     def send(self, value):
         """Send the defined string"""
-        self.__s.sendall(value + chr(0))
+        # Implementing support for Unicode in Python 2
+        self.__s.sendall((value + chr(0)).encode('utf-8'))
 
     def sendInput(self, code, arg, content):
         self.__s.sendall(chr(code) + arg + chr(0) + content + chr(0))
