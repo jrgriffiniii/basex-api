@@ -294,7 +294,7 @@ class Query():
         if xmlStr:
 
             openTagPattern = r'<(?!/)[^>]+>'
-            if not len(re.findall(openTagPattern, results[i])) and not len(re.findall(r'</[a-zA-Z0-9]+>', xmlStr)):
+            if not len(re.findall(openTagPattern, xmlStr)) and not len(re.findall(r'</[a-zA-Z0-9]+>', xmlStr)):
 
                 return xmlStr
 
