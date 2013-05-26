@@ -206,8 +206,7 @@ class Session(object):
 
     def send(self, value):
         """Send the defined string"""
-        # Implementing support for Unicode in Python 2
-        self.__s.sendall((value + chr(0)).encode('utf-8'))
+        self.__s.sendall(value + chr(0))
 
     def sendInput(self, code, arg, content):
         self.__s.sendall(chr(code) + arg + chr(0) + content + chr(0))
@@ -290,6 +289,15 @@ class Query():
         # This does not handle cases of CDATA
 
         pattern = re.compile('(?<=>)\s*(?=<)', re.MULTILINE)
+
+        # Character data
+        if xmlStr:
+
+            openTagPattern = r'<(?!/)[^>]+>'
+            if not len(re.findall(openTagPattern, results[i])) and not len(re.findall(r'</[a-zA-Z0-9]+>', xmlStr)):
+
+                return xmlStr
+
         results = re.split(pattern, xmlStr)
 
         elements = []
