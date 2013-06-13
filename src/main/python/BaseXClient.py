@@ -206,7 +206,8 @@ class Session(object):
 
     def send(self, value):
         """Send the defined string"""
-        self.__s.sendall(value + chr(0))
+        # Implementing support for Unicode in Python 2
+        self.__s.sendall((value + chr(0)).encode('utf-8'))
 
     def sendInput(self, code, arg, content):
         self.__s.sendall(chr(code) + arg + chr(0) + content + chr(0))
@@ -263,15 +264,32 @@ class Query():
         self.__session.send(chr(4) + self.__id)
         return self.__session.iter_receive()
 
-    def execute(self, lxmlEtree = None):
+    def execute(self, dataType = None):
 
-        if lxmlEtree:
+        if dataType.__class__.__name__ == 'module' and dataType.__name__ == 'lxml.etree':
 
-            return self.executeXml(lxmlEtree)
+            return self.executeXml(dataType)
+        elif isinstance(dataType, type): # Refactor
+
+            return self.executeDataType(dataType)
         else:
 
             # Pass the results as strings
             return self.exc(chr(5), self.__id)
+
+    def executeDataType(self, dataType):
+
+        xmlStr = self.exc(chr(5), self.__id)
+
+        # Return an empty array for cases in which there were no results
+        if not xmlStr: return None
+
+        if dataType.__name__ == 'int':
+
+            return int(xmlStr)
+        else:
+
+            pass
 
     def executeXml(self, lxmlEtree):
 
@@ -289,15 +307,6 @@ class Query():
         # This does not handle cases of CDATA
 
         pattern = re.compile('(?<=>)\s*(?=<)', re.MULTILINE)
-
-        # Character data
-        if xmlStr:
-
-            openTagPattern = r'<(?!/)[^>]+>'
-            if not len(re.findall(openTagPattern, xmlStr)) and not len(re.findall(r'</[a-zA-Z0-9]+>', xmlStr)):
-
-                return xmlStr
-
         results = re.split(pattern, xmlStr)
 
         elements = []
